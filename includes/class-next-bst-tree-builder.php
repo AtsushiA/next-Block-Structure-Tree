@@ -18,7 +18,8 @@ class Next_BST_Tree_Builder {
 	 * Get the display label for a single parsed block.
 	 *
 	 * Mirrors the JS getBlockLabel() in src/index.js:
-	 *   - Uses WP_Block_Type_Registry to get the human-readable title.
+	 *   - core/block (synced pattern): resolves the pattern title via get_post().
+	 *   - Other blocks: uses WP_Block_Type_Registry for the human-readable title.
 	 *   - Appends "[name]" when block.attributes.metadata.name is set.
 	 *
 	 * @param array $block Parsed block array from parse_blocks().
@@ -36,6 +37,15 @@ class Next_BST_Tree_Builder {
 		$title      = $block_type instanceof WP_Block_Type && $block_type->title
 			? $block_type->title
 			: $block_name;
+
+		// core/block = synced pattern (reusable block).
+		// Show "パターン名 [パターンタイトル]" to match the metadata.name convention.
+		if ( 'core/block' === $block_name && ! empty( $block['attrs']['ref'] ) ) {
+			$ref_post = get_post( (int) $block['attrs']['ref'] );
+			if ( $ref_post instanceof WP_Post && $ref_post->post_title ) {
+				return "{$title} [{$ref_post->post_title}]";
+			}
+		}
 
 		$meta_name = $block['attrs']['metadata']['name'] ?? null;
 
