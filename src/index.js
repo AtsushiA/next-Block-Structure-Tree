@@ -1,20 +1,53 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { BlockSettingsMenuControls } from '@wordpress/block-editor';
 import { MenuItem } from '@wordpress/components';
-import { select, dispatch } from '@wordpress/data';
+import { select, dispatch, resolveSelect } from '@wordpress/data';
 import { getBlockType } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Get the display label for a block.
- * If the block has a metadata.name set, appends it as "[name]".
+ * Recursively collect all core/block ref IDs from a block tree.
  *
- * @param {Object} block Block object.
+ * @param {Object}  block Block object.
+ * @param {Set}     refs  Accumulator set.
+ * @returns {Set<number>} Set of ref IDs.
+ */
+function collectPatternRefs( block, refs = new Set() ) {
+	if ( block.name === 'core/block' && block.attributes?.ref ) {
+		refs.add( block.attributes.ref );
+	}
+	( block.innerBlocks ?? [] ).forEach( ( child ) =>
+		collectPatternRefs( child, refs )
+	);
+	return refs;
+}
+
+/**
+ * Get the display label for a block.
+ *
+ * - core/block (synced pattern): uses resolved pattern title from patternMap,
+ *   falls back to block type title if not yet loaded.
+ * - Other blocks: uses block type title, appending "[name]" if metadata.name is set.
+ *
+ * @param {Object}          block      Block object.
+ * @param {Map<number, string>} patternMap Resolved pattern titles keyed by ref ID.
  * @returns {string} Display label.
  */
-function getBlockLabel( block ) {
+function getBlockLabel( block, patternMap ) {
 	const blockType = getBlockType( block.name );
 	const title = blockType?.title ?? block.name;
+
+	// core/block = synced pattern: show "パターン [パターン名]".
+	if ( block.name === 'core/block' ) {
+		const ref = block.attributes?.ref;
+		if ( ref ) {
+			const patternTitle = patternMap?.get( ref );
+			if ( patternTitle ) {
+				return `${ title } [${ patternTitle }]`;
+			}
+		}
+	}
+
 	const metaName = block.attributes?.metadata?.name;
 	return metaName ? `${ title } [${ metaName }]` : title;
 }
@@ -22,20 +55,21 @@ function getBlockLabel( block ) {
 /**
  * Recursively build tree lines for a block's inner blocks.
  *
- * @param {Object}  block   Block object containing innerBlocks.
- * @param {string}  prefix  Current line prefix (tree drawing characters).
- * @param {boolean} isLast  Whether this block is the last sibling.
+ * @param {Object}              block      Block object.
+ * @param {string}              prefix     Current line prefix.
+ * @param {boolean}             isLast     Whether this block is the last sibling.
+ * @param {Map<number, string>} patternMap Resolved pattern titles.
  * @returns {string[]} Array of tree lines.
  */
-function buildTree( block, prefix, isLast ) {
-	const title = getBlockLabel( block );
+function buildTree( block, prefix, isLast, patternMap ) {
+	const title = getBlockLabel( block, patternMap );
 	const connector = isLast ? '└── ' : '├── ';
 	const lines = [ prefix + connector + title ];
 
 	const children = block.innerBlocks ?? [];
 	children.forEach( ( child, i, arr ) => {
 		const childPrefix = prefix + ( isLast ? '    ' : '│   ' );
-		lines.push( ...buildTree( child, childPrefix, i === arr.length - 1 ) );
+		lines.push( ...buildTree( child, childPrefix, i === arr.length - 1, patternMap ) );
 	} );
 
 	return lines;
@@ -44,15 +78,16 @@ function buildTree( block, prefix, isLast ) {
 /**
  * Generate a tree-formatted string from a root block.
  *
- * @param {Object} rootBlock The root block object.
+ * @param {Object}              rootBlock  The root block object.
+ * @param {Map<number, string>} patternMap Resolved pattern titles.
  * @returns {string} Tree-formatted string.
  */
-function generateTree( rootBlock ) {
-	const lines = [ getBlockLabel( rootBlock ) ];
+function generateTree( rootBlock, patternMap ) {
+	const lines = [ getBlockLabel( rootBlock, patternMap ) ];
 
 	const children = rootBlock.innerBlocks ?? [];
 	children.forEach( ( child, i, arr ) => {
-		lines.push( ...buildTree( child, '', i === arr.length - 1 ) );
+		lines.push( ...buildTree( child, '', i === arr.length - 1, patternMap ) );
 	} );
 
 	return lines.join( '\n' );
@@ -89,6 +124,9 @@ async function writeToClipboard( text ) {
 /**
  * Copy the block structure tree for the given client IDs to the clipboard.
  *
+ * Resolves synced pattern (core/block) titles via the REST API before
+ * generating the tree, so pattern names appear instead of generic "パターン".
+ *
  * @param {string[]|undefined} selectedClientIds Array of selected block client IDs.
  */
 async function handleCopy( selectedClientIds ) {
@@ -109,11 +147,32 @@ async function handleCopy( selectedClientIds ) {
 		return;
 	}
 
+	// Collect all synced pattern ref IDs from the selected block trees.
+	const refs = new Set();
+	rootBlocks.forEach( ( block ) => collectPatternRefs( block, refs ) );
+
+	// Resolve pattern titles via core data store (REST API).
+	const patternMap = new Map();
+	if ( refs.size > 0 ) {
+		await Promise.all(
+			[ ...refs ].map( async ( ref ) => {
+				const entity = await resolveSelect( 'core' ).getEntityRecord(
+					'postType',
+					'wp_block',
+					ref
+				);
+				if ( entity?.title?.raw ) {
+					patternMap.set( ref, entity.title.raw );
+				}
+			} )
+		);
+	}
+
 	const text = rootBlocks
 		.map( ( block, i, arr ) => {
 			const label =
 				arr.length > 1 ? `[選択ブロック ${ i + 1 }] ` : '';
-			return label + generateTree( block );
+			return label + generateTree( block, patternMap );
 		} )
 		.join( '\n\n' );
 

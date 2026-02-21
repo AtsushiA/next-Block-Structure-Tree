@@ -1,6 +1,6 @@
 {
 	"name": "next-block-structure-tree",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"description": "Adds Copy Block-Structure-Tree to the Gutenberg block context menu.",
 	"scripts": {
 		"build": "wp-scripts build",
