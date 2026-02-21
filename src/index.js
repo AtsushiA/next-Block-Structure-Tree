@@ -6,6 +6,20 @@ import { getBlockType } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 
 /**
+ * Get the display label for a block.
+ * If the block has a metadata.name set, appends it as "[name]".
+ *
+ * @param {Object} block Block object.
+ * @returns {string} Display label.
+ */
+function getBlockLabel( block ) {
+	const blockType = getBlockType( block.name );
+	const title = blockType?.title ?? block.name;
+	const metaName = block.attributes?.metadata?.name;
+	return metaName ? `${ title } [${ metaName }]` : title;
+}
+
+/**
  * Recursively build tree lines for a block's inner blocks.
  *
  * @param {Object}  block   Block object containing innerBlocks.
@@ -14,8 +28,7 @@ import { __ } from '@wordpress/i18n';
  * @returns {string[]} Array of tree lines.
  */
 function buildTree( block, prefix, isLast ) {
-	const blockType = getBlockType( block.name );
-	const title = blockType?.title ?? block.name;
+	const title = getBlockLabel( block );
 	const connector = isLast ? '└── ' : '├── ';
 	const lines = [ prefix + connector + title ];
 
@@ -35,10 +48,7 @@ function buildTree( block, prefix, isLast ) {
  * @returns {string} Tree-formatted string.
  */
 function generateTree( rootBlock ) {
-	const blockType = getBlockType( rootBlock.name );
-	const title = blockType?.title ?? rootBlock.name;
-
-	const lines = [ title ];
+	const lines = [ getBlockLabel( rootBlock ) ];
 
 	const children = rootBlock.innerBlocks ?? [];
 	children.forEach( ( child, i, arr ) => {
