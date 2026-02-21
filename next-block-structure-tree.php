@@ -20,8 +20,13 @@ define( 'NEXT_BST_URL', plugin_dir_url( __FILE__ ) );
 
 /**
  * Enqueue editor assets for the block editor.
+ * Only runs for users who can edit posts (defense-in-depth).
  */
 function next_bst_enqueue_editor_assets() {
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return;
+	}
+
 	$asset_file = NEXT_BST_DIR . 'build/index.asset.php';
 
 	if ( ! file_exists( $asset_file ) ) {
