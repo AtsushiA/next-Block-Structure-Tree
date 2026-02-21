@@ -1,0 +1,8 @@
+.claude
+.distignore
+.gitignore
+DESIGN.md
+node_modules
+package.json
+package-lock.json
+src

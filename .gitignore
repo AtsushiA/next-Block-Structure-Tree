@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build artifacts (コミット不要な場合はコメントアウトを外す)
+# build/
+
+# Release zip
+*.zip
+
+# IDE / Editor
+.claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
