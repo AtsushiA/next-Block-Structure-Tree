@@ -18,6 +18,14 @@ define( 'NEXT_BST_VERSION', '1.1.0' );
 define( 'NEXT_BST_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEXT_BST_URL', plugin_dir_url( __FILE__ ) );
 
+// Tree builder (shared by CLI and future server-side features).
+require_once NEXT_BST_DIR . 'includes/class-next-bst-tree-builder.php';
+
+// WP-CLI command (loaded only inside WP-CLI to avoid overhead on web requests).
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once NEXT_BST_DIR . 'includes/class-next-bst-cli.php';
+}
+
 /**
  * Enqueue editor assets for the block editor.
  * Only runs for users who can edit posts (defense-in-depth).
