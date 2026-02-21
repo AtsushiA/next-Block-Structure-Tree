@@ -15,26 +15,26 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 }
 
 /**
- * Gutenberg ブロック構造を Unix tree 形式のテキストファイルにエクスポートします。
+ * Export Gutenberg block structure trees to text files.
  *
  * ## EXAMPLES
  *
- *     # すべての公開ページをエクスポート（デフォルト出力先: ./next-bst-export）
+ *     # Export all published pages (default output: ./next-bst-export)
  *     wp next-bst export --all
  *
- *     # 出力先ディレクトリを指定してエクスポート
+ *     # Export with custom output directory
  *     wp next-bst export --all --output=/var/export/pages
  *
- *     # 投稿タイプを指定してエクスポート
+ *     # Export by post type
  *     wp next-bst export --all --post-type=post
  *
- *     # 下書きも含めてエクスポート
+ *     # Export including drafts
  *     wp next-bst export --all --status=any
  *
- *     # ID を指定して1件だけエクスポート
+ *     # Export single page by ID
  *     wp next-bst export --id=42
  *
- *     # スラッグを指定して1件だけエクスポート
+ *     # Export single page by slug
  *     wp next-bst export --slug=about
  *
  * @when after_wp_load
@@ -42,43 +42,42 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 class Next_BST_CLI extends WP_CLI_Command {
 
 	/**
-	 * Gutenberg ブロック構造をテキストファイルにエクスポートします。
+	 * Export block structure trees to text files.
 	 *
 	 * ## DESCRIPTION
 	 *
-	 * 各ページ・投稿のブロック構造を Unix `tree` コマンド風のテキストファイルに出力します。
-	 * 出力先ディレクトリ（--output）に投稿スラッグ名のファイルが生成されます。
-	 * 親子関係のあるページは親スラッグ名のサブフォルダに自動配置されます。
+	 * Exports each page/post block structure to a text file in Unix `tree` format.
+	 * Output files are named after the post slug and placed in the output directory.
+	 * Child pages are automatically nested under parent slug subdirectories.
 	 *
 	 * ## OUTPUT FORMAT
 	 *
-	 * 各ファイルの形式:
+	 * Each file contains a metadata header followed by the block tree:
 	 *
-	 *   Title:    ページタイトル
+	 *   Title:    Page Title
 	 *   Slug:     page-slug
 	 *   ID:       42
 	 *   URL:      https://example.com/page-slug/
 	 *   Modified: 2026-02-21 10:00:00
 	 *   ----------------------------------------
 	 *
-	 *   ページタイトル
-	 *   ├── グループ [MAIN]
-	 *   │   ├── 見出し
-	 *   │   └── 段落
-	 *   └── セクション
-	 *       └── 段落
+	 *   Page Title
+	 *   ├── Group [MAIN]
+	 *   │   ├── Heading
+	 *   │   └── Paragraph
+	 *   └── Section
+	 *       └── Paragraph
 	 *
-	 * ブロックにカスタム名（metadata.name）が設定されている場合は
-	 * 「ブロック名 [カスタム名]」の形式で表示されます。
+	 * Blocks with a custom name (metadata.name) are shown as "Block Title [Custom Name]".
 	 *
 	 * ## FOLDER STRUCTURE
 	 *
-	 * 親子関係のあるページは親スラッグ名のフォルダ以下に自動配置されます:
+	 * Child pages are automatically placed under parent slug directories:
 	 *
 	 *   next-bst-export/
-	 *   ├── sample-page.txt       ← ルートページ
+	 *   ├── sample-page.txt
 	 *   ├── about.txt
-	 *   ├── about/                ← 親スラッグ名のフォルダ
+	 *   ├── about/
 	 *   │   ├── team.txt
 	 *   │   └── history.txt
 	 *   └── services/
@@ -88,51 +87,50 @@ class Next_BST_CLI extends WP_CLI_Command {
 	 * ## OPTIONS
 	 *
 	 * [--all]
-	 * : すべての投稿をエクスポートします。--id / --slug と同時には使えません。
+	 * : Export all posts. Cannot be combined with --id or --slug.
 	 *
 	 * [--id=<id>]
-	 * : 指定した投稿 ID の1件をエクスポートします。
+	 * : Export a single post by ID.
 	 *
 	 * [--slug=<slug>]
-	 * : 指定したスラッグの1件をエクスポートします。
-	 *   階層スラッグ（parent/child）も指定できます。
+	 * : Export a single post by slug. Supports hierarchical slugs (e.g. parent/child).
 	 *
 	 * [--post-type=<post-type>]
-	 * : 対象の投稿タイプを指定します。
+	 * : Post type to export.
 	 * ---
 	 * default: page
 	 * ---
 	 *
 	 * [--status=<status>]
-	 * : エクスポートする投稿ステータスを指定します（publish / draft / any など）。
+	 * : Post status to include (publish, draft, any, etc.).
 	 * ---
 	 * default: publish
 	 * ---
 	 *
 	 * [--output=<path>]
-	 * : 出力先ディレクトリ（絶対パスまたは wp コマンド実行ディレクトリからの相対パス）。
+	 * : Output directory. Accepts an absolute path or a path relative to the wp invocation directory.
 	 * ---
 	 * default: ./next-bst-export
 	 * ---
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # すべての公開ページをエクスポート（デフォルト出力先: ./next-bst-export）
+	 *     # Export all published pages (default output: ./next-bst-export)
 	 *     wp next-bst export --all
 	 *
-	 *     # 出力先ディレクトリを指定してエクスポート
+	 *     # Export with custom output directory
 	 *     wp next-bst export --all --output=./export
 	 *
-	 *     # 投稿タイプ post をエクスポート（下書きも含む）
+	 *     # Export posts including drafts
 	 *     wp next-bst export --all --post-type=post --status=any
 	 *
-	 *     # ページ ID を指定して1件だけエクスポート
+	 *     # Export a single page by ID
 	 *     wp next-bst export --id=42 --output=/tmp/export
 	 *
-	 *     # スラッグを指定して1件だけエクスポート
+	 *     # Export a single page by slug
 	 *     wp next-bst export --slug=about
 	 *
-	 *     # 子ページを階層スラッグで指定してエクスポート
+	 *     # Export a child page using hierarchical slug
 	 *     wp next-bst export --slug=about/team
 	 *
 	 * @subcommand export
