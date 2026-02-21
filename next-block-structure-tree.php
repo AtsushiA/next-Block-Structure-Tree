@@ -3,7 +3,7 @@
  * Plugin Name:  NExT Block Structure Tree
  * Plugin URI:   -
  * Description:  Adds "Copy Block-Structure-Tree" to the Gutenberg block context menu.
- * Version:      1.0.0
+ * Version:      1.1.0
  * Author:       NExT-Season
  * Author URI: https://next-season.net
  * License:      GPL-2.0-or-later
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NEXT_BST_VERSION', '1.0.0' );
+define( 'NEXT_BST_VERSION', '1.1.0' );
 define( 'NEXT_BST_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEXT_BST_URL', plugin_dir_url( __FILE__ ) );
 
