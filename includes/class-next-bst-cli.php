@@ -15,11 +15,11 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 }
 
 /**
- * Export block structure trees to text files.
+ * Gutenberg ブロック構造を Unix tree 形式のテキストファイルにエクスポートします。
  *
  * ## EXAMPLES
  *
- *     # すべてのページをエクスポート
+ *     # すべての公開ページをエクスポート（デフォルト出力先: ./next-bst-export）
  *     wp next-bst export --all
  *
  *     # 出力先ディレクトリを指定してエクスポート
@@ -42,35 +42,98 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 class Next_BST_CLI extends WP_CLI_Command {
 
 	/**
-	 * Export block structure trees to text files.
+	 * Gutenberg ブロック構造をテキストファイルにエクスポートします。
+	 *
+	 * ## DESCRIPTION
+	 *
+	 * 各ページ・投稿のブロック構造を Unix `tree` コマンド風のテキストファイルに出力します。
+	 * 出力先ディレクトリ（--output）に投稿スラッグ名のファイルが生成されます。
+	 * 親子関係のあるページは親スラッグ名のサブフォルダに自動配置されます。
+	 *
+	 * ## OUTPUT FORMAT
+	 *
+	 * 各ファイルの形式:
+	 *
+	 *   Title:    ページタイトル
+	 *   Slug:     page-slug
+	 *   ID:       42
+	 *   URL:      https://example.com/page-slug/
+	 *   Modified: 2026-02-21 10:00:00
+	 *   ----------------------------------------
+	 *
+	 *   ページタイトル
+	 *   ├── グループ [MAIN]
+	 *   │   ├── 見出し
+	 *   │   └── 段落
+	 *   └── セクション
+	 *       └── 段落
+	 *
+	 * ブロックにカスタム名（metadata.name）が設定されている場合は
+	 * 「ブロック名 [カスタム名]」の形式で表示されます。
+	 *
+	 * ## FOLDER STRUCTURE
+	 *
+	 * 親子関係のあるページは親スラッグ名のフォルダ以下に自動配置されます:
+	 *
+	 *   next-bst-export/
+	 *   ├── sample-page.txt       ← ルートページ
+	 *   ├── about.txt
+	 *   ├── about/                ← 親スラッグ名のフォルダ
+	 *   │   ├── team.txt
+	 *   │   └── history.txt
+	 *   └── services/
+	 *       ├── web.txt
+	 *       └── design.txt
 	 *
 	 * ## OPTIONS
 	 *
 	 * [--all]
-	 * : すべての投稿をエクスポートする。
+	 * : すべての投稿をエクスポートします。--id / --slug と同時には使えません。
 	 *
 	 * [--id=<id>]
-	 * : 指定した投稿 ID の1件をエクスポートする。
+	 * : 指定した投稿 ID の1件をエクスポートします。
 	 *
 	 * [--slug=<slug>]
-	 * : 指定したスラッグの1件をエクスポートする。
+	 * : 指定したスラッグの1件をエクスポートします。
+	 *   階層スラッグ（parent/child）も指定できます。
 	 *
 	 * [--post-type=<post-type>]
-	 * : 対象投稿タイプ。デフォルト: page
+	 * : 対象の投稿タイプを指定します。
+	 * ---
+	 * default: page
+	 * ---
 	 *
 	 * [--status=<status>]
-	 * : 投稿ステータス。publish / draft / any など。デフォルト: publish
+	 * : エクスポートする投稿ステータスを指定します（publish / draft / any など）。
+	 * ---
+	 * default: publish
+	 * ---
 	 *
 	 * [--output=<path>]
-	 * : 出力先ディレクトリ（絶対パス or CWD からの相対パス）。
-	 *   デフォルト: ./next-bst-export
+	 * : 出力先ディレクトリ（絶対パスまたは wp コマンド実行ディレクトリからの相対パス）。
+	 * ---
+	 * default: ./next-bst-export
+	 * ---
 	 *
 	 * ## EXAMPLES
 	 *
+	 *     # すべての公開ページをエクスポート（デフォルト出力先: ./next-bst-export）
 	 *     wp next-bst export --all
-	 *     wp next-bst export --all --output=./export --post-type=post
+	 *
+	 *     # 出力先ディレクトリを指定してエクスポート
+	 *     wp next-bst export --all --output=./export
+	 *
+	 *     # 投稿タイプ post をエクスポート（下書きも含む）
+	 *     wp next-bst export --all --post-type=post --status=any
+	 *
+	 *     # ページ ID を指定して1件だけエクスポート
 	 *     wp next-bst export --id=42 --output=/tmp/export
+	 *
+	 *     # スラッグを指定して1件だけエクスポート
 	 *     wp next-bst export --slug=about
+	 *
+	 *     # 子ページを階層スラッグで指定してエクスポート
+	 *     wp next-bst export --slug=about/team
 	 *
 	 * @subcommand export
 	 */

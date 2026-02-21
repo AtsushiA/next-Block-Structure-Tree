@@ -89,8 +89,10 @@ Modified: 2026-02-21 10:00:00
 
 ### WP-CLI エクスポート
 
+コマンドリファレンスは `wp next-bst export --help` で確認できます。
+
 ```bash
-# すべてのページをエクスポート（デフォルト出力先: ./next-bst-export）
+# すべての公開ページをエクスポート（デフォルト出力先: ./next-bst-export）
 wp next-bst export --all
 
 # 出力先ディレクトリを指定
@@ -99,7 +101,7 @@ wp next-bst export --all --output=/var/export/pages
 # 投稿タイプを指定（デフォルト: page）
 wp next-bst export --all --post-type=post
 
-# 下書きなども含める
+# 下書きも含める
 wp next-bst export --all --status=any
 
 # ページ ID を指定して1件だけエクスポート
@@ -107,7 +109,21 @@ wp next-bst export --id=42 --output=./export
 
 # スラッグを指定して1件だけエクスポート
 wp next-bst export --slug=about
+
+# 子ページを階層スラッグで指定
+wp next-bst export --slug=about/team
 ```
+
+#### オプション一覧
+
+| オプション | デフォルト | 説明 |
+|---|---|---|
+| `--all` | — | すべての投稿をエクスポート |
+| `--id=<id>` | — | 指定した投稿 ID の1件をエクスポート |
+| `--slug=<slug>` | — | 指定したスラッグの1件をエクスポート（階層スラッグ対応） |
+| `--post-type=<post-type>` | `page` | 対象の投稿タイプ |
+| `--status=<status>` | `publish` | 投稿ステータス（publish / draft / any など） |
+| `--output=<path>` | `./next-bst-export` | 出力先ディレクトリ（絶対パスまたは相対パス） |
 
 #### 出力フォルダ構成
 
